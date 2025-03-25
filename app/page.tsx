@@ -1,103 +1,170 @@
+"use client";
+
+import type React from "react";
+
+import { useState } from "react";
+import { Upload } from "lucide-react";
 import Image from "next/image";
 
-export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { processImage } from "@/app/actions";
+import Navbar from "@/components/navbar";
+import Footer from "@/components/footer";
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+export default function Home() {
+    const [selectedImage, setSelectedImage] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [processedImageUrl, setProcessedImageUrl] = useState<string | null>(
+        null
+    );
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setSelectedImage(file);
+
+            // Create a preview URL for the selected image
+            const fileUrl = URL.createObjectURL(file);
+            setPreviewUrl(fileUrl);
+
+            // Reset processed image when a new image is selected
+            setProcessedImageUrl(null);
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!selectedImage) return;
+
+        try {
+            setIsProcessing(true);
+
+            // Create a FormData object to send the image
+            const formData = new FormData();
+            formData.append("image", selectedImage);
+
+            // Process the image using the server action
+            const result = await processImage(formData);
+
+            if (result.success) {
+                setProcessedImageUrl(result.url || null);
+            }
+        } catch (error) {
+            console.error("Error processing image:", error);
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    return (
+        <div className="flex min-h-screen flex-col">
+            <Navbar />
+
+            <main className="flex-1">
+                <div className="container mx-auto py-6">
+                    <h1 className="text-3xl font-bold text-center mb-8">
+                        图片处理应用
+                    </h1>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* 左侧上传区域 */}
+                        <Card>
+                            <CardContent className="p-6">
+                                <h2 className="text-xl font-semibold mb-4">
+                                    上传图片
+                                </h2>
+                                <form
+                                    onSubmit={handleSubmit}
+                                    className="space-y-4"
+                                >
+                                    <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 cursor-pointer hover:bg-gray-50 transition-colors">
+                                        <input
+                                            type="file"
+                                            id="image-upload"
+                                            accept="image/*"
+                                            onChange={handleImageChange}
+                                            className="hidden"
+                                        />
+                                        <label
+                                            htmlFor="image-upload"
+                                            className="cursor-pointer flex flex-col items-center"
+                                        >
+                                            <Upload className="h-10 w-10 text-gray-400 mb-2" />
+                                            <span className="text-sm text-gray-500">
+                                                点击或拖拽图片到此处
+                                            </span>
+                                        </label>
+                                    </div>
+
+                                    {previewUrl && (
+                                        <div className="mt-4">
+                                            <p className="text-sm font-medium mb-2">
+                                                预览:
+                                            </p>
+                                            <div className="relative h-48 w-full">
+                                                <Image
+                                                    src={
+                                                        previewUrl ||
+                                                        "/placeholder.svg"
+                                                    }
+                                                    alt="Preview"
+                                                    fill
+                                                    className="object-contain rounded-md"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <Button
+                                        type="submit"
+                                        className="w-full"
+                                        disabled={
+                                            !selectedImage || isProcessing
+                                        }
+                                    >
+                                        {isProcessing
+                                            ? "处理中..."
+                                            : "处理图片"}
+                                    </Button>
+                                </form>
+                            </CardContent>
+                        </Card>
+
+                        {/* 右侧结果区域 */}
+                        <Card>
+                            <CardContent className="p-6">
+                                <h2 className="text-xl font-semibold mb-4">
+                                    处理结果
+                                </h2>
+                                <div className="flex items-center justify-center border rounded-lg h-64 bg-gray-50">
+                                    {processedImageUrl ? (
+                                        <div className="relative h-full w-full">
+                                            <Image
+                                                src={
+                                                    processedImageUrl ||
+                                                    "/placeholder.svg"
+                                                }
+                                                alt="Processed Image"
+                                                fill
+                                                className="object-contain rounded-md"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-400">
+                                            处理后的图片将显示在这里
+                                        </p>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+            </main>
+
+            <Footer />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+    );
 }
