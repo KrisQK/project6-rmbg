@@ -13,7 +13,17 @@ const nextConfig: NextConfig = {
                 hostname: "public.blob.vercel-storage.com",
                 pathname: "/**",
             },
+            {
+                protocol: "https",
+                hostname: "*.fal.ai",
+                pathname: "/**",
+            },
         ],
+    },
+    experimental: {
+        serverActions: {
+            bodySizeLimit: "10mb",
+        },
     },
 };
 

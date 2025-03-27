@@ -1,17 +1,12 @@
+/* 首先放置所有的@import */
+@import "tw-animate-css";
+
+/* 然后是Tailwind指令 */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* 导入动画 CSS */
-@import "tw-animate-css";
-
-/* 删除以下部分，这是 v4 特有语法 */
-/* @theme inline {
-  --color-background: var(--background);
-  ...
-} */
-
-/* 替换为 Tailwind CSS v3 的变量定义方式 */
+/* 最后是其他CSS规则 */
 @layer base {
     :root {
         --background: 0 0% 100%;
