@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Home, Image, Settings, Info } from "lucide-react";
 
@@ -47,6 +49,10 @@ export default function Navbar() {
                     <Link
                         href="#"
                         className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90"
+                        onClick={e => {
+                            e.preventDefault();
+                            alert("登录功能已简化为本地提示，无需谷歌登录");
+                        }}
                     >
                         登录
                     </Link>

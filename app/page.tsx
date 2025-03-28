@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Upload } from "lucide-react";
 import Image from "next/image";
 
@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { processImage } from "@/app/actions";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
+import { checkUsageLimit, recordUsage, getRemainingUsage } from "@/lib/usage";
 
 export default function Home() {
     const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -25,6 +26,11 @@ export default function Home() {
         message: string;
         technical?: string;
     } | null>(null);
+    const [remainingUsage, setRemainingUsage] = useState(getRemainingUsage());
+
+    useEffect(() => {
+        setRemainingUsage(getRemainingUsage());
+    }, []);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -49,6 +55,15 @@ export default function Home() {
 
         if (!selectedImage) return;
 
+        if (!checkUsageLimit()) {
+            setErrorDetails({
+                stage: "使用限制",
+                message: "您今日的使用次数已达上限，请明天再试",
+                technical: "Daily usage limit exceeded",
+            });
+            return;
+        }
+
         try {
             setIsProcessing(true);
             setProcessingStage("准备上传图片");
@@ -60,9 +75,10 @@ export default function Home() {
             const result = await processImage(formData);
 
             if (result.success && result.url) {
+                recordUsage();
+                setRemainingUsage(getRemainingUsage());
                 setProcessedImageUrl(result.url);
                 setProcessingStage("处理完成");
-                console.log("处理成功，结果URL:", result.url);
             } else {
                 const errorMsg = result.error || "处理失败，但没有错误信息";
                 setErrorDetails({
@@ -70,7 +86,6 @@ export default function Home() {
                     message: "服务器处理图片时发生错误",
                     technical: errorMsg,
                 });
-                console.error("处理失败:", errorMsg);
             }
         } catch (error: unknown) {
             let errorStage = "未知阶段";
@@ -114,6 +129,12 @@ export default function Home() {
                     <h1 className="text-3xl font-bold text-center mb-8">
                         图片处理应用
                     </h1>
+
+                    <div className="text-center mb-4">
+                        <p className="text-sm text-gray-600">
+                            今日剩余使用次数：{remainingUsage}次
+                        </p>
+                    </div>
 
                     {errorDetails && (
                         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
